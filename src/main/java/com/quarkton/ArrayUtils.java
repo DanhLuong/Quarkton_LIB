@@ -90,12 +90,24 @@ public class ArrayUtils {
         }
     }
     public static boolean compare(int[] arr1, int[] arr2) {
-        if(arr1.length != arr2.length) throw new IllegalArgumentException("Can not compare arrays with different length");
+        if(arr1.length != arr2.length) return false;
         for (int i = 0; i < arr1.length; i++) {
             if(arr1[i] != arr2[i]) {
                 return false;
             }
         }
         return true;
+    }
+
+    public static int containAtIdx(int[] container, int[] inner) {
+        if(container.length < inner.length) return -1;
+        outer:
+        for (int i = 0; i < container.length-inner.length+1; i++) {
+            for(int j=i; j<i+inner.length; j++) {
+                if(container[j] != inner[j-i]) continue outer;
+            }
+            return i;
+        }
+        return -1;
     }
 }

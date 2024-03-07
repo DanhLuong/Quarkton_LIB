@@ -30,5 +30,29 @@ public class SortUtils {
         }
     }
 
+    public static void insertionSort(int[] arr) {
+        int len = arr.length;
+        for (int i=0; i<len; i++) {
+            int current = arr[i];
+            int j;
+            for (j=i; j>0 && arr[j-1] > current; j--) {
+                arr[j] =arr[j-1];
+            }
+            arr[j] = current;
+        }
+    }
 
+    public static void shellSort(int[] arr) {
+        int len = arr.length;
+        for(int gap=len/2; gap>0; gap/=2) {
+            for (int i=gap; i<len; i++) {
+                int current = arr[i];
+                int j;
+                for (j=i; j>=gap && arr[j-gap] > current; j-=gap) {
+                    arr[j] = arr[j-gap];
+                }
+                arr[j] = current;
+            }
+        }
+    }
 }
