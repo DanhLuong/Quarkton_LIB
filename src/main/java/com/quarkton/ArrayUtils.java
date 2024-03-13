@@ -2,8 +2,6 @@ package com.quarkton;
 
 import java.util.Random;
 
-import com.quarkton.CommonUtils;
-
 public class ArrayUtils {
     private ArrayUtils(){}
     /**
@@ -12,8 +10,9 @@ public class ArrayUtils {
      * @param arr the array to copy
      * @param startIdx start index inclusive
      * @param endIdx end index exclusive
+     * @throws OutOfMemoryError exception when array have large size. Adjust heap size using argument -Xmx[megabytes]m
      */
-     public static int[] copy(int[] arr, int startIdx, int endIdx) {
+     public static int[] copy(int[] arr, int startIdx, int endIdx) throws OutOfMemoryError{
          int len = arr.length;
          if(startIdx < 0 || startIdx >len || endIdx < 0 || endIdx >len) {
              throw new IllegalArgumentException("Invalid start / end index");
@@ -21,13 +20,65 @@ public class ArrayUtils {
          if(startIdx > endIdx) {
              throw new IllegalArgumentException("Start index is bigger than end index");
          }
+         int[] copy = new int[endIdx - startIdx];
+         for (int i = startIdx; i < endIdx; i++) {
+             copy[i-startIdx] = arr[i];
+         }
+         return copy;
+     }
+    public static int[] copyParallel(int[] arr, int startIdx, int endIdx) throws OutOfMemoryError{
+        int len = arr.length;
+        if(startIdx < 0 || startIdx >len || endIdx < 0 || endIdx >len) {
+            throw new IllegalArgumentException("Invalid start / end index");
+        }
+        if(startIdx > endIdx) {
+            throw new IllegalArgumentException("Start index is bigger than end index");
+        }
         int[] copy = new int[endIdx - startIdx];
-        for (int i = startIdx; i < endIdx; i++) {
-            copy[i-startIdx] = arr[i];
+        int segmentNumber = Runtime.getRuntime().availableProcessors();
+        CopyThread[] threads = new CopyThread[segmentNumber];
+        int segmentSize = (endIdx-startIdx) / segmentNumber;
+        if(segmentSize < 1) {
+            throw new IllegalArgumentException("Array size too small for copyParallel");
+        } else {
+            for (int i = 0; i < segmentNumber; i++) {
+                int startSegmentIndex = i * segmentSize;
+                int endSegmentIndex = (i == segmentNumber-1) ? len : (i + 1) * segmentSize;
+                threads[i] = new CopyThread(arr, copy, startSegmentIndex, endSegmentIndex, i+"");
+                threads[i].start();
+            }
+            try {
+                for (CopyThread thread : threads) {
+                    thread.join();
+                }
+            } catch (InterruptedException e) {
+                System.out.println("concurrent failed");
+            }
         }
         return copy;
-     }
+    }
 
+    static class CopyThread extends Thread {
+        private final int[] sourceArray;
+        private final int[] destinationArray;
+        private final int startIdx;
+        private final int endIdx;
+
+        public CopyThread(int[] sourceArray, int[] destinationArray, int startIndex, int endIndex, String name) {
+            this.sourceArray = sourceArray;
+            this.destinationArray = destinationArray;
+            this.startIdx = startIndex;
+            this.endIdx = endIndex;
+            this.setName(name);
+        }
+
+        @Override
+        public void run() {
+            for (int i = startIdx; i < endIdx; i++) {
+                destinationArray[i] = sourceArray[i];
+            }
+        }
+    }
     /**
      * Make a copy array from original array
      *
@@ -90,6 +141,7 @@ public class ArrayUtils {
         }
     }
     public static boolean compare(int[] arr1, int[] arr2) {
+        if(arr1 == arr2) return true;
         if(arr1.length != arr2.length) return false;
         for (int i = 0; i < arr1.length; i++) {
             if(arr1[i] != arr2[i]) {
