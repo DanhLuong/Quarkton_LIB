@@ -1,6 +1,9 @@
 package com.quarkton;
 
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
 
 public class ArrayUtils {
     private ArrayUtils(){}
@@ -78,6 +81,23 @@ public class ArrayUtils {
                 destinationArray[i] = sourceArray[i];
             }
         }
+    }
+
+    public static int[] copyWithPool(int[] arr, int numSegments, ExecutorService service) throws OutOfMemoryError, InterruptedException {
+        int len = arr.length;
+        int[] copy = new int[len];
+        int segmentSize =  len/numSegments;
+        for (int i = 0; i < numSegments; i++) {
+            final int segmentIndex = i;
+            service.execute(() -> {
+                int start = segmentIndex * segmentSize;
+                int end = Math.min(start + segmentSize, len);
+                System.arraycopy(arr, start, copy, start, end - start);
+            });
+        }
+        service.shutdown();
+        //service.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        return copy;
     }
     /**
      * Make a copy array from original array

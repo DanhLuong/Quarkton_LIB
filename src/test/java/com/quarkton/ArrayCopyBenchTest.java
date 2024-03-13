@@ -2,10 +2,11 @@ package com.quarkton;
 
 import org.junit.jupiter.api.*;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
-import static com.quarkton.ArrayUtils.copy;
-import static com.quarkton.ArrayUtils.copyParallel;
+import static com.quarkton.ArrayUtils.*;
 import static java.lang.System.arraycopy;
 
 public class ArrayCopyBenchTest {
@@ -49,6 +50,24 @@ public class ArrayCopyBenchTest {
         bm.track("e2");
         System.out.println("System arraycopy: " + bm.checkInterval("s2", "e2"));
         Assertions.assertTrue(ArrayUtils.compare(arr, arr2), "Wrong");
+    }
+    @Test
+    public void copyByPoolBenchTest() {
+        //warm up
+        int[] arr3 = new int[arr.length];
+        arraycopy(arr ,0, arr3,0, arr.length);
+        arr3 = null;
+        //test
+        ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        try {
+            bm.track("s3");
+            arr3 = copyWithPool(arr ,10, service);
+            bm.track("e3");
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("copyWithPool: " + bm.checkInterval("s3", "e3"));
+        Assertions.assertTrue(ArrayUtils.compare(arr, arr3), "Wrong");
     }
 
 }
